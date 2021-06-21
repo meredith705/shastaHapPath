@@ -6,10 +6,10 @@ Creates haploid assemblies from shasta assembly graphs.
 
 ## Python Dependencies
 Required Python libries:  
-python bindings: [bdsg](https://github.com/vgteam/libbdsg#from-pip-python-bindings-only)  
-``` pip install bdsg ```  
-And:  
-```argparse, numpy, json```  
+  python bindings: [bdsg](https://github.com/vgteam/libbdsg#from-pip-python-bindings-only)  
+  ``` pip install bdsg ```  
+  And:  
+  ```argparse, numpy, json```  
 
 ## Input files
 The python program requries:
