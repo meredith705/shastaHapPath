@@ -37,4 +37,4 @@ The test graphs have a set of 4 files:
 3) A ```graph.gfa``` file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey ). Phasing the biallelic bubbles is the next step once traversal is solid. 
 ![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
 
-
+The nodes in this bidirectional graph represent DNA sequence and the edges reprensent links between different DNA segments. Bubbles represent variation in the diploid DNA assembly graph. The red path is an arbitrary walk through the graph representing a haploid path through the graph. 
