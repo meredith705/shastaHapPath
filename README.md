@@ -24,7 +24,7 @@ Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shast
 ```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```  
 
 ## Output Files
-1)  ``` graph.path.csv ``` A csv file that colors a gfa file when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
+1)  ``` graph.path.csv ``` A csv file that colors a gfa graph when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
 2)  ``` graph.pg.log.txt ``` A log file for development  
 3)  Two haploid fasta files - not turned on right now
 
