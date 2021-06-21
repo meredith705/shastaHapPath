@@ -17,9 +17,10 @@ The python program requries:
   bluntifiers: [getBlunted](https://github.com/vgteam/GetBlunted), gimbricate/seqwish, stark)
   TODO: Add more about going from shasta overlappy gfa to chunk_1.pg
 2) vg snarls json ( [vg toolkit](https://github.com/vgteam/vg#command-line-interface) )
-  TODO: Add snarls command
-~ not necessary because this function is not turned on yet ~
-3) Alignment files for parental Kmers
+  TODO: Add snarls command  
+  
+~ not necessary because this function is not turned on yet ~  
+3) Alignment files for parental Kmers  
 
 ## Running the Command:
 ```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```  
