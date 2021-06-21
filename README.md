@@ -22,6 +22,7 @@ The python program requries:
 
 ## Running the Command:
 ```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```
+The test directory has some toy examples of graphs with Directed Acyclic Graph (dag) and Parent Snarls (A snarl that has a snarl within it's boundires ). The input (.pg and .pg.snarls.json ), output ( path.csv ), and the gfa file for viewing the graph in bandage.
 
 ## Output Files
 1)  ``` graph.path.csv ``` A csv file that colors a gfa file when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
