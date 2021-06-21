@@ -21,8 +21,14 @@ The python program requries:
 3) Alignment files for parental Kmers
 
 ## Running the Command:
-```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```
-The test directory has some toy examples of graphs with Directed Acyclic Graph (dag) and Parent Snarls (A snarl that has a snarl within it's boundires ). The input (.pg and .pg.snarls.json ), output ( path.csv ), and the gfa file for viewing the graph in bandage.
+```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```  
+The test directory has some toy graph examples:  
+Directed Acyclic Graph (dag) and Parent Snarls (A snarl that has a snarl within it's boundires )
+The test graphs have a set of 3 files:  
+The input ```graph..pg and graph..pg.snarls.json ```
+Output ``` graph.path.csv ```  
+A gfa file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey )
+![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
 
 ## Output Files
 1)  ``` graph.path.csv ``` A csv file that colors a gfa file when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
