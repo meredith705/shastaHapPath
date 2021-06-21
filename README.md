@@ -22,6 +22,13 @@ Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shast
 
 ## Running the Command:
 ```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```  
+
+## Output Files
+1)  ``` graph.path.csv ``` A csv file that colors a gfa file when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
+2)  ``` graph.pg.log.txt ``` A log file for development  
+3)  Two haploid fasta files - not turned on right now
+
+## Toy Examples
 The test directory has some toy graph examples that illustrate traversals of the graph that avoid tips in the graph, navigate through snarls in the graph, and traverse one side of bi-allelic bubbles in the graph:  
 Directed Acyclic Graph (dag) and Parent Snarls (A snarl that has a snarl within it's boundires )
 The test graphs have a set of 4 files:  
@@ -30,9 +37,4 @@ The test graphs have a set of 4 files:
 3) A gfa file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey )
 ![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
 
-## Output Files
-1)  ``` graph.path.csv ``` A csv file that colors a gfa file when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
 
-2)  ``` graph.pg.log.txt ``` A log file for development
-
-3)  Two haploid fasta files - not turned on right now
