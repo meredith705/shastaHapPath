@@ -32,14 +32,16 @@ Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shast
 The test directory has some toy graph examples that illustrate traversals of the graph that avoid tips in the graph, navigate through snarls in the graph, and traverse one side of bi-allelic bubbles in the graph.    
   
 Tests are graphs that contain different snarl types:
-- Directed Acyclic Graph (dag) 
-- Parent Snarls : A top level snarl that has a snarl within it's boundires and which has no parents itself
-- bi-allelic bubbles
+- directed acyclic graphs (dag)  
+- parent snarls : A top level snarl that has a snarl within it's boundires and which has no parents itself
+- bi-allelic bubbles : bubbles with just two nodes
   
 The test graphs are a set of 4 files:  
 1) Two Input Files ```test_graph.pg``` & ```test_graph.pg.snarls.json ```    
 2) One Output ```test_graph.path.csv ```    
-3) A ```test_graph.pg.gfa``` file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey ). Phasing the biallelic bubbles is the next step once traversal is solid. 
+3) A ```test_graph.pg.gfa``` file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey ).  
 ![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
 
-The nodes in this bidirectional graph represent DNA sequence and the edges reprensent links between different DNA segments. Bubbles represent variation in the diploid DNA assembly graph. The red path is an arbitrary walk through the graph representing a haploid path through the graph. 
+The nodes in this bidirectional graph represent DNA sequence and the edges reprensent links between different DNA segments. Bubbles represent variation in the diploid DNA assembly graph. The red path is an arbitrary walk through the graph representing a haploid path through the graph.   
+  
+Phasing the biallelic bubbles is the next step once traversal is solid.
