@@ -22,7 +22,7 @@ The python program requries:
 
 ## Running the Command:
 ```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```  
-The test directory has some toy graph examples:  
+The test directory has some toy graph examples that illustrate traversals of the graph that avoid tips in the graph, navigate through snarls in the graph, and traverse one side of bi-allelic bubbles in the graph:  
 Directed Acyclic Graph (dag) and Parent Snarls (A snarl that has a snarl within it's boundires )
 The test graphs have a set of 3 files:  
 The input ```graph..pg and graph..pg.snarls.json ```
