@@ -32,8 +32,8 @@ Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shast
 The test directory has some toy graph examples that illustrate traversals of the graph that avoid tips in the graph, navigate through snarls in the graph, and traverse one side of bi-allelic bubbles in the graph.    
 Tests are for Directed Acyclic Graph (dag) and Parent Snarls (A snarl that has a snarl within it's boundires )  
 The test graphs have a set of 4 files:  
-1) 2 Input Files ```graph.pg & graph.pg.snarls.json ```    
-2) 1 Output ``` graph.path.csv ```    
+1) Two Input Files ```graph.pg & graph.pg.snarls.json ```    
+2) One Output ``` graph.path.csv ```    
 3) A ```graph.gfa``` file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey ). Phasing the biallelic bubbles is the next step once traversal is solid. 
 ![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
 
