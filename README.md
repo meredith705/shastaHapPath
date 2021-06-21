@@ -1,5 +1,5 @@
 # shastaHapPath
-Creates haploid assemblies from shasta assembly graphs.
+Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shasta) assembly graphs.
 
 ## Algorithm
 ![image](https://user-images.githubusercontent.com/28329271/122816002-0882a980-d28b-11eb-9b01-d5823c6a45f2.png)
