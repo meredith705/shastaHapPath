@@ -34,7 +34,7 @@ Tests are for Directed Acyclic Graph (dag) and Parent Snarls (A snarl that has a
 The test graphs have a set of 4 files:  
 1) 2 Input Files ```graph.pg & graph.pg.snarls.json ```    
 2) 1 Output ``` graph.path.csv ```    
-3) A gfa file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey )
+3) A gfa file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey ). The choice of 
 ![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
 
 
