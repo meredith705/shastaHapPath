@@ -90,13 +90,19 @@ class snrlManager:
 					'unvisited' : True, \
 					'backward': sn.get('start').get('backward', False),\
 					'start' : { 'start_id' : int(sn.get('start').get('node_id')),'backward': sn.get('start').get('backward', False)},\
+					'start_self_reachable' : sn.get('start_self_reachable',False),\
+					'start_end_reachable' : sn.get('start_end_reachable',False),\
 					'end' : {'end_id' : int(sn.get('end').get('node_id')),'backward' : sn.get('end').get('backward', False)}, \
+					'end_self_reachable' : sn.get('end_self_reachable',False),\
 					'child' : sn.get('parent',False)}
 				self.sd['directed_acyclic_net_graphEnds'][int(sn.get('end').get('node_id'))] = {\
 					'unvisited' : True, \
 					'backward': sn.get('end').get('backward', False),\
 					'start' : { 'start_id' : int(sn.get('start').get('node_id')), 'backward': sn.get('start').get('backward',False)}, \
+					'start_self_reachable' : sn.get('start_self_reachable',False),\
+					'start_end_reachable' : sn.get('start_end_reachable',False),\
 					'end' : {'end_id' : int(sn.get('end').get('node_id')),'backward' : sn.get('end').get('backward', False)}, \
+					'end_self_reachable' : sn.get('end_self_reachable',False),\
 					'child' : sn.get('parent',False)}
 			else:
 				keys.append(int(sn.get('start').get('node_id')))
@@ -205,6 +211,7 @@ class graphPathFinder:
 
 	def writeOutPathCSV(self,p):
 		# open the path.csv and write out the path with colors for bandage viewing 
+		# TODO: Output the other haploid path
 		outpathCSV=open(self.inputGraph[:-3]+".path.csv",'w')
 		outpathCSV.write("Node,Path,Color\n")
 		# parent1='hg03'
@@ -304,15 +311,20 @@ class graphPathFinder:
 		outSTAT.close()
 
 	def calcHetAvgLen(self,node):
-		''' get length of both sides of a biallelic bubble and rt avg'''
+		''' get length of both sides of a biallelic bubble and return mean length of the bubbles sides '''
+		# fill the lis with the forward reachable nodes from this boundry node
 		self.fwdReachableNodes(node,False)
 		ls = np.array([self.graph.get_length(l) for l in self.lis])
 		print('biallelic mean',np.mean(ls))
+		# append the mean length to the list of all biallelic bubble lengths
 		self.hetNodeAvgLens.append(np.mean(ls))
 	
 	def calcTipLen(self,node):
 		''' check degree and find len of tip '''
 		def itIsATip(tNode):
+			''' if either side of this node has an edge degree of 0, it is a tip
+				returns True if the node has 0 degrees on either side '''
+			# note the graph often ends in a tip
 			if self.graph.get_degree(tNode,False)==0:
 				print(self.graph.get_id(tNode),'is a tip')
 				return True
@@ -321,6 +333,7 @@ class graphPathFinder:
 				return True
 			else:
 				return False
+		# from a list of all fwd reachable nodes store the length of any tips
 		self.fwdReachableNodes(node,False)
 		ls = np.array([self.graph.get_length(l) for l in self.lis if itIsATip(l)])
 		for l in ls:
@@ -328,7 +341,7 @@ class graphPathFinder:
 			self.dagTipLens.append(l)
 
 	def deserializeGraph(self):
-		# deserialize the packed graph
+		''' deserialize the packed graph into memory and begin chaining parents together'''
 		self.graph.deserialize(self.inputGraph)
 		# Q? make a path in the graph instead of the list of graph_ids? 
 		# A: no probably too slow? also I'll be altering the origional gfa file 
@@ -342,7 +355,8 @@ class graphPathFinder:
 			return True
 		self.lis.clear()	
 		self.graph.follow_edges(other,False,add2List) 
-		if bothEnds:
+		print('bothEnds?',bothEnds)
+		if (bothEnds==False):
 			self.graph.follow_edges(other,True,add2List) 
 
 	def goOppDirFromLeftmostTopLevelSnStart(self):
@@ -354,6 +368,8 @@ class graphPathFinder:
 		if len(unVisitedTopSns)>0:
 			self.sd['parentSnarls'][unVisitedTopSns[0]]['unvisited']=False
 			self.goingBackward=True
+		else:
+			print('\nWe lost the origional parent start node!\n')
 
 		#flip the only unvisited start node and go from there till end
 		if len(unVisitedTopSns)>0:
@@ -372,13 +388,16 @@ class graphPathFinder:
 		return False # rt true didn't stop the flow at degree>1
 
 	def chooseNextNode(self,nextN):
-		'''moves pointer to each reachable node until the chosen self.exit node is reached'''
-		print('nextNode?', int(self.graph.get_id(nextN)) == self.exit)
+		'''moves pointer to each reachable node until the chosen self.exit node is reached
+			self.graph.follow_edges(self.currentNode,False,self.chooseNextNode)
+		'''
+		print('choose nextNode?',self.graph.get_id(nextN), int(self.graph.get_id(nextN)) == self.exit)
 		if self.graph.get_id(nextN) == self.exit:
 			self.currentNode=nextN
 			self.exit=0
 			return False
 		else: 
+			# flipedHandleNextN=self.get_handle()
 			return True
 
 	def checkIsNodeSnBoundry(self,node):
@@ -390,7 +409,7 @@ class graphPathFinder:
 			self.hap1PathIds.append(self.graph.get_id(self.currentNode))
 			self.graph.follow_edges(self.currentNode,False,self.nextNode)
 
-		#snarls
+		#snarls 
 		if self.graph.get_id(node) in list(self.sd['snarls'].keys()): 
 			print('\t sn start',self.graph.get_id(node) )
 			self.exit = self.sd['snarls'][self.graph.get_id(node)]['end']['end_id']
@@ -409,9 +428,11 @@ class graphPathFinder:
 			# if self.sd['biAllelic_snarls'][int(self.graph.get_id(node))]['end']['end_id'] not in :
 			# only for the start node? or check fwd degree count to make sure?
 			self.calcHetAvgLen(node) 
+			# walk forward until we land on the opposide sn boundry node
 			while int(self.graph.get_id(self.currentNode)) != int(self.sd['biAllelic_snarls'][int(self.graph.get_id(node))]['end']['end_id']):
 				# TODO use parent info to assign hap
 				addNode_advancePointer()
+			# move to that boundry node
 			addNode_advancePointer()
 			return 'biAllelic_snarls'
 		elif self.graph.get_id(node) in list(self.sd['biAllelic_snarlsEnds'].keys()):
@@ -454,49 +475,60 @@ class graphPathFinder:
 			         DAG start 36949
 			'''
 		elif self.graph.get_id(node) in list(self.sd['directed_acyclic_net_graph'].keys()):
-			print('\t DAG start',self.graph.get_id(node) )
 			self.exit = self.sd['directed_acyclic_net_graph'][self.graph.get_id(node)]['end']['end_id']
+			print('\t DAG start',self.graph.get_id(node),'DAG end:',self.exit )
 			return 'directed_acyclic_net_graph'
 		elif self.graph.get_id(node) in list(self.sd['directed_acyclic_net_graphEnds'].keys()):
-			print('\t DAG end',self.graph.get_id(node))
 			self.exit = self.sd['directed_acyclic_net_graphEnds'][self.graph.get_id(node)]['start']['start_id']
+			print('\t DAG end',self.graph.get_id(node),'DAG start:',self.exit)
 			return 'directed_acyclic_net_graphEnds'
 		else:
 			return False
 
 	def avoidTip(self, llSnDict):
 		''' move through a DAG avoiding walking into the tip '''
-		# dagEnd = self.sd[llSnDict][int(self.graph.get_id(self.currentNode))]['end']
-		# datStart = self.sd[llSnDict][int(self.graph.get_id(self.currentNode))]['start']
 		dagWalk = []	
 		dagWalkLens = []
 		self.calcTipLen(self.currentNode)
-		self.fwdReachableNodes(self.currentNode,True)
+		# send 
+		self.fwdReachableNodes(self.currentNode,self.sd[llSnDict][self.graph.get_id(self.currentNode)]['start_self_reachable'] )
 		# do this to avoid DAG tips when exit node is preset
 		endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)] 
-		print('endInList',self.exit,len(endInList))
+		print('\tBoundry node:',self.graph.get_id(self.currentNode), 'endInList',self.exit,len(endInList),'lis',[self.graph.get_id(i) for i in self.lis])
+		
 		while len(endInList) < 1:
 			#TODO calc tip len or whatever we have
 			# if self.lis > 1 : check degree of both and get tip len
 			dagWalkLens.append(self.graph.get_length(self.currentNode))
-			print('\t dagNode:',self.graph.get_id(self.currentNode),'dagWalk',dagWalk)
-			if dagWalk.count(self.currentNode) < 3:
-				dagWalk.append(self.currentNode)
-			else:
-				print('node in dagWalk too many times',dagWalk)
-				break
-			# move to one of the nodes in lis 
-			self.graph.follow_edges(self.currentNode,False,self.nextNode)
-			self.fwdReachableNodes(self.currentNode,True)
-			endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]
 
-		# append the node that connects to the end of dag
-		dagWalk.append(self.currentNode)
+			print('\t dagNode:',self.graph.get_id(self.currentNode),'dagWalk',[self.graph.get_id(i) for i in dagWalk])
+			# stop after 2 visits to any node
+			if dagWalk.count(self.currentNode) >2:#< 3:
+				print('node in dagWalk too many times',[self.graph.get_id(i) for i in dagWalk])
+				break
+			# if this is the second time we have passed this node in a dag, it is an inversion
+			elif dagWalk.count(self.currentNode) == 2:
+				print('second visit, flip node orientation looking for end')
+				dagWalk.append(self.currentNode)
+					# move to one of the nodes in lis 
+				self.graph.follow_edges(self.currentNode,False,self.nextNode)
+				self.fwdReachableNodes(self.currentNode,True)
+				endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]				
+			else:
+				dagWalk.append(self.currentNode)
+				# move to one of the nodes in lis 
+				self.graph.follow_edges(self.currentNode,False,self.nextNode)
+				self.fwdReachableNodes(self.currentNode,True)
+				endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]
+				print(self.graph.get_id(self.currentNode),'endInList',self.exit,len(endInList),'lis',[self.graph.get_id(i) for i in self.lis])
+
+		# append the node that connect/
 		# go to end and append the end of the dag
 		
 		if self.exit not in self.hap1PathIds:
 			print('go to the end. exit',self.exit)
 			self.graph.follow_edges(self.currentNode,False,self.chooseNextNode)
+			print('are we at the end?',self.graph.get_id(self.currentNode))
 			dagWalk.append(self.currentNode)
 		else:
 			print('just keep going')
@@ -507,8 +539,7 @@ class graphPathFinder:
 			self.hap1PathIds.append(self.graph.get_id(d))
 		dagWalkLens.append(np.sum(np.array(dagWalkLens)))
 
-
-
+		print('final dag Walk',[self.graph.get_id(i) for i in dagWalk])
 		return True
 
 	def navigateSnarl(self, llSnDict):
@@ -553,8 +584,19 @@ class graphPathFinder:
 				if snBndryDict:
 					# these boundries will be the small bluntified nodes - I'm not going to skew the distribution like that. # self.homNodeLens.append(self.graph.get_length(self.currentNode)) maybe add it to it's own len distribution
 					self.bluntifiedNodeLens.append(self.graph.get_length(self.currentNode))
-					print('ok now which dict?',snBndryDict)
-					self.navigateSnarl(snBndryDict)
+					print('\tok now which dict?',snBndryDict)
+					if self.exit not in self.hap1PathIds:
+						self.navigateSnarl(snBndryDict)
+					else:
+						print('\talready went through this dag')
+						# go through hom graph portion record length and append to walk 
+						self.homNodeLens.append(self.graph.get_length(self.currentNode))
+						self.walkFromEnd_toStart.append(self.currentNode)
+						self.hap1PathIds.append(self.graph.get_id(self.currentNode))
+						# move currentNode pointer to the next reacheable node
+						self.graph.follow_edges(self.currentNode,False,self.nextNode)
+						# fill list with reachable nodes
+						self.fwdReachableNodes(self.currentNode,False)						
 					# break
 				# if this is the end of the graph stop
 				elif self.graph.get_degree(self.currentNode,False)<1:
