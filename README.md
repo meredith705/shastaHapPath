@@ -40,8 +40,16 @@ The test graphs are a set of 4 files:
 1) Two Input Files ```test_graph.pg``` & ```test_graph.pg.snarls.json ```    
 2) One Output ```test_graph.path.csv ```    
 3) A ```test_graph.pg.gfa``` file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey ).  
+  
+This example graph has a parent snarl (not covered in grey) and dag. The tip is avoided and the graph is covered from end to end. 
+```python3 parentPath.1.05.noParentAlns.py -g test_dag.2.pg -j test_dag.2.pg.snarls.json >> test_dag.2.pg.log.txt```  
 ![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
+  
+This dag is an inversion and is included in the path.  
+```python3 parentPath.1.05.noParentAlns.py -g test_dag.inv.pg -j test_dag.inv.pg.snarls.json >> test_dag.inv.pg.log.txt```  
+![test_dag inv path](https://user-images.githubusercontent.com/28329271/122843356-1ac50d80-d2b4-11eb-8eac-44b18a4bfbdf.png)
 
-The nodes in this bidirectional graph represent DNA sequence and the edges reprensent links between different DNA segments. Bubbles represent variation in the diploid DNA assembly graph. The red path is an arbitrary walk through the graph representing a haploid path through the graph.   
+  
+The nodes in these bidirectional graph represent DNA sequence and the edges reprensent links between different DNA segments. Bubbles represent variation in the diploid DNA assembly graph. The red path is an arbitrary walk through the graph representing a haploid path through the graph.   
   
 Phasing the biallelic bubbles is the next step once traversal is solid.
