@@ -25,7 +25,7 @@ Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shast
 
 ## Output Files
 1)  ``` graph.path.csv ``` A csv file that colors a gfa graph when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
-2)  ``` graph.pg.log.txt ``` A log file for development  
+2)  ``` graph.pg.log.txt ``` A log file for development, graph stats (homozygous node lengths, mean heterozygous node lengths, etc.) are at the final lines of this file for now.   
 3)  Two haploid fasta files - not turned on right now
 
 ## Toy Examples
