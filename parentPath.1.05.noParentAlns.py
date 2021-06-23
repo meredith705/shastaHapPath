@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# usage parentPath.py -g blunt.PackedGraph.pg -m mat.node.kmer.count -p pat.node.kmer.count
+# usage parentPath.py -g blunt.PackedGraph.pg -j blunt.PackedGraph.snarls.json -m mat.node.kmer.count -p pat.node.kmer.count
 
 from bdsg.bdsg import PackedGraph
 import argparse 
@@ -271,8 +271,8 @@ class graphPathFinder:
 
 	def getStats(self,plen,pri_nodes,alt_nodes,dbls_pri,dbls_alt):
 		### open the stats.csv and add the header
-		global tipLengths
-		global biAllelicLengths
+		# global tipLengths
+		# global biAllelicLengths
 		
 		outSTAT=open(args.input_pg[:-3]+".stats.csv",'w')
 		outSTAT.write("chunkNum,chunk_Len,NumNodes,parent_snarls,num_snarls,covered_snarls,num_dang,num_bi_allelics,hetSeq_Len,bi_allelic_avgLen,bi_allelic_medianLen,total_seq_inTip,PrimaryPath_len,Primary_Nodes,Alt_Nodes,Pri_dups,Alt_dups,NotIncluded_Nodes,NotInc_Nodes/TotalNodes,bps_not_inPri,missingParentSnarls,covered/totParentSnarls,plen/totalLen\n")
@@ -459,21 +459,6 @@ class graphPathFinder:
 			return 'biAllelic_snarlEnds'
 
 		#DAG proceed until we find the end of the DAG avoing the tip
-		# TODO make DAG toy
-			''' Current Errors chunk_4.pg
-			nextNode? False
-	         DAG start 36949
-			ok now which dict? directed_acyclic_net_graph
-			endInList [<bdsg.handlegraph.handle_t object at 0x7fc817ade330>]
-			go to the end. dagWalk: [<bdsg.handlegraph.handle_t object at 0x7fc817ade2b0>]
-			nextNode? False
-			         DAG start 36949
-			ok now which dict? directed_acyclic_net_graph
-			endInList [<bdsg.handlegraph.handle_t object at 0x7fc817ade370>]
-			go to the end. dagWalk: [<bdsg.handlegraph.handle_t object at 0x7fc817ade2b0>]
-			nextNode? False
-			         DAG start 36949
-			'''
 		elif self.graph.get_id(node) in list(self.sd['directed_acyclic_net_graph'].keys()):
 			self.exit = self.sd['directed_acyclic_net_graph'][self.graph.get_id(node)]['end']['end_id']
 			print('\t DAG start',self.graph.get_id(node),'DAG end:',self.exit )
@@ -487,6 +472,7 @@ class graphPathFinder:
 
 	def avoidTip(self, llSnDict):
 		''' move through a DAG avoiding walking into the tip '''
+		## TODO final node of the graph gets repeated because of this loop here
 		dagWalk = []	
 		dagWalkLens = []
 		self.calcTipLen(self.currentNode)
@@ -522,14 +508,15 @@ class graphPathFinder:
 				endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]
 				print(self.graph.get_id(self.currentNode),'endInList',self.exit,len(endInList),'lis',[self.graph.get_id(i) for i in self.lis])
 
-		# append the node that connect/
-		# go to end and append the end of the dag
-		
+
+		# go to end and append the end of the dag		
 		if self.exit not in self.hap1PathIds:
 			print('go to the end. exit',self.exit)
 			self.graph.follow_edges(self.currentNode,False,self.chooseNextNode)
 			print('are we at the end?',self.graph.get_id(self.currentNode))
 			dagWalk.append(self.currentNode)
+			# move currentNode pointer to the next reacheable node
+			self.graph.follow_edges(self.currentNode,False,self.nextNode)
 		else:
 			print('just keep going')
 			self.graph.follow_edges(self.currentNode,False,self.nextNode)
@@ -587,6 +574,7 @@ class graphPathFinder:
 					print('\tok now which dict?',snBndryDict)
 					if self.exit not in self.hap1PathIds:
 						self.navigateSnarl(snBndryDict)
+
 					else:
 						print('\talready went through this dag')
 						# go through hom graph portion record length and append to walk 
