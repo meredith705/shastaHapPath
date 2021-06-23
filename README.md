@@ -1,5 +1,9 @@
 # shastaHapPath
-Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shasta) assembly graphs.
+Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shasta) assembly graphs. Shasta assembly graphs are bidirectional graphs where nodes represent DNA sequence and the edges reprensent links between different DNA segments. Bubbles represent variation in the diploid DNA assembly graph.   
+The ( [vg toolkit](https://github.com/vgteam) ) provides tools for working with graphs that have blunt edges. Shasta graphs are produced with overlapping edges and need to be bluntified before it can be converted into a vg graph.   
+This program uses the boundry nodes, identified using vg snarls, to travers the differnt structures within the graph and identify haploid walks through the graph. Those walks are output as haploid fasta files.  
+ 
+If parental kmer alignment files are provided haploid paths can be resolved. 
 
 ## Algorithm
 ![image](https://user-images.githubusercontent.com/28329271/122816002-0882a980-d28b-11eb-9b01-d5823c6a45f2.png)
@@ -11,17 +15,17 @@ Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shast
   ```argparse, numpy, json```  
 
 ## Input files
-1) a bluntified vg PackedGraph file 
-  bluntifiers: [getBlunted](https://github.com/vgteam/GetBlunted), gimbricate/seqwish, stark)
+1) a bluntified vg PackedGraph file   
+  bluntifiers: [getBlunted](https://github.com/vgteam/GetBlunted), gimbricate/seqwish, stark)  
   TODO: Add more about going from shasta overlappy gfa to chunk_1.pg
-2) vg snarls json ( [vg toolkit](https://github.com/vgteam/vg#command-line-interface) )
+2) vg snarls json ( [vg toolkit](https://github.com/vgteam/vg#command-line-interface) )  
   TODO: Add snarls command  
   
 ~ not necessary because this function is not turned on yet ~  
 3) Alignment files for parental Kmers  
 
 ## Running the Command:
-```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json >> graph.pg.log.txt```  
+```python3 parentPath.1.05.noParentAlns.py -g graph.pg -j graph.pg.snarls.json > graph.pg.log.txt```  
 
 ## Output Files
 1)  ``` graph.path.csv ``` A csv file that colors a gfa graph when viewed in [bandage](https://rrwick.github.io/Bandage/) graph viewer
@@ -42,11 +46,11 @@ The test graphs are a set of 4 files:
 3) A ```test_graph.pg.gfa``` file for viewing the graph in bandage. Here the haploid path is red ( currently the code doesn't attempt to traverse the top level Parent snarl so it is grey ).  
   
 This example graph has a parent snarl (not covered in grey) and dag. The tip is avoided and the graph is covered from end to end. 
-```python3 parentPath.1.05.noParentAlns.py -g test_dag.2.pg -j test_dag.2.pg.snarls.json >> test_dag.2.pg.log.txt```  
+```python3 parentPath.1.05.noParentAlns.py -g test_dag.2.pg -j test_dag.2.pg.snarls.json > test_dag.2.pg.log.txt```  
 ![test_dag 2 path](https://user-images.githubusercontent.com/28329271/122820486-84cbbb80-d290-11eb-8747-44c2c6348148.png)
   
 This graph has a dag that is an inversion just after the parent snarl. The inversion is included in the path.  
-```python3 parentPath.1.05.noParentAlns.py -g test_dag.inv.pg -j test_dag.inv.pg.snarls.json >> test_dag.inv.pg.log.txt```  
+```python3 parentPath.1.05.noParentAlns.py -g test_dag.inv.pg -j test_dag.inv.pg.snarls.json > test_dag.inv.pg.log.txt```  
 ![test_dag inv path](https://user-images.githubusercontent.com/28329271/122843356-1ac50d80-d2b4-11eb-8eac-44b18a4bfbdf.png)
 
   
