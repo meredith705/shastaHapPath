@@ -1,6 +1,8 @@
 # shastaHapPath
 Creates haploid assemblies from [shasta](https://github.com/chanzuckerberg/shasta) assembly graphs. Shasta assembly graphs are bidirectional graphs where nodes represent DNA sequence and the edges reprensent links between different DNA segments. Bubbles represent variation in the diploid DNA assembly graph.   
+  
 The ( [vg toolkit](https://github.com/vgteam) ) provides tools for working with graphs that have blunt edges. Shasta graphs are produced with overlapping edges and need to be bluntified before it can be converted into a vg graph.   
+  
 This program uses the boundry nodes, identified using vg snarls, to travers the differnt structures within the graph and identify haploid walks through the graph. Those walks are output as haploid fasta files.  
  
 If parental kmer alignment files are provided haploid paths can be resolved. 
@@ -37,7 +39,7 @@ The test directory has some toy graph examples that illustrate traversals of the
   
 Tests are graphs that contain different snarl types:
 - directed acyclic graphs (dag)  
-- parent snarls : A top level snarl that has a snarl within it's boundires and which has no parents itself
+- parent snarls : A top level snarl that has a snarl within its boundaries and which has no parents itself
 - bi-allelic bubbles : bubbles with just two nodes
   
 The test graphs are a set of 4 files:  
