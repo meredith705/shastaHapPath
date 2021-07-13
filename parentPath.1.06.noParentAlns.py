@@ -53,7 +53,7 @@ class SnarlManager:
 				snarlEnd = int(sn.get('parent').get('end').get('node_id'))
 				snarlEndBkwd = sn.get('parent').get('end').get('backward', False)
 
-				
+				### I'm not orientating the top level snarl start and end nodes, just leaving them as is
 				# if snarlStart > snarlEnd:
 				# 	# if the start is larger than the end, swich them and toggle the backwards flags
 				# 	tempSnStart = snarlStart
@@ -224,7 +224,7 @@ class graphPathFinder:
 					outpathCSV.write( str(self.graph.get_id(n)) +",M,"+parent2Color+"\n")
 		outpathCSV.close()
 
-	# TODO make it a list of handles that are orientated 
+	#  TODO find faster fasta output method
 	def writeContig(self, hap1Path):
 		# output all the sequence from the path to a fasta file ( 80 characters)
 				# Don't forget to check orientations with e.g. graph.get_is_reverse(here)
@@ -314,7 +314,7 @@ class graphPathFinder:
 	def getStats(self):
 		''' open the stats.csv, add the header, and all stats values'''		
 		outSTAT=open(self.inputGraph[:-3]+".stats.csv",'w')
-		outSTAT.write("chunkNum,chunk_Len,NumNodes,num_parent_snarls,num_snarls,num_dang,num_bi_allelics,hetSeq_Len,bi_allelic_avgLen,bi_allelic_medianLen,total_seq_inTip,hap1Path_len,num_hap1Path_Nodes,Alt_Nodes,NotIncluded_Nodes,NotInc_Nodes/TotalNodes,bps_not_inPri,hap1len/totalLen\n")
+		outSTAT.write("chunkNum,chunk_Len,NumNodes,num_parent_snarls,num_snarls,num_dang,num_bi_allelics,Sum_of_Avg_hetSeq_Len,hetSeqAvgLen_avgLen,hetSeqAvgLen_medianLen,total_seq_inTip,hap1Path_len,num_hap1Path_Nodes,Alt_Nodes,duplicate_nodes,NotIncluded_Nodes,NotInc_Nodes/TotalNodes,bps_not_inPri,hap1len/totalLen\n")
 		#chunkNum
 		outSTAT.write(self.inputGraph[6:][:-3]+",")
 		#chunk_Len
@@ -350,7 +350,6 @@ class graphPathFinder:
 		outSTAT.write("0,")# alt nodes
 		#duplicate nodes ~ kinda different now with handles 
 		outSTAT.write(str(len(self.hap1_doubledHandles))+",")
-		# outSTAT.write(str(dbls_alt)+",")
 		# NotIncluded_Nodes
 		notIncludedNodes = (self.graph.get_node_count()-(len(self.hap1FinalWalk)))
 		outSTAT.write(str( notIncludedNodes  )+",")
@@ -421,10 +420,8 @@ class graphPathFinder:
 			self.getStats()
 			print(np.sum(np.array(self.hap1_pathLenInBps)), (np.sum(np.array(self.hap1_pathLenInBps))/self.graph.get_total_length()))
 			self.writeContig(self.hap1FinalWalk)
-		if len(self.sd['parentSnarls'])==0:
+		elif len(self.sd['parentSnarls'])==0:
 			self.noParentPath()
-
-			#TODO what if there are no top level parent snarls
 		else:
 			# chain parents together
 			self.chainParents()
@@ -444,7 +441,7 @@ class graphPathFinder:
 	def goOppDirFromLeftmostTopLevelSnStart(self):
 		'''go 'left' from most 'left' start snarl - the one that hasn't been visited yet'''
 		unVisitedTopSns=[x for x in list(self.sd['parentSnarls'].keys()) if self.sd['parentSnarls'][x]['unvisited']]
-		print('goign opposite from first start, unVisitedTopSns',unVisitedTopSns, self.graph.get_id(self.currentNode))
+		print('going opposite from first start, unVisitedTopSns',unVisitedTopSns, self.graph.get_id(self.currentNode))
 		# set the start node to visited and flip the directional flag
 		#TODO change this incase ther are no parent snarls 
 		if len(unVisitedTopSns)>0:
@@ -464,10 +461,13 @@ class graphPathFinder:
 			self.currentNode=self.graph.get_handle(unVisitedTopSns[0],handleDir)
 			self.fwdReachableNodes(self.currentNode,True)
 			nodesInWalk = [ l for l in self.lis if self.graph.get_id(l) in self.hap1PathIds]
+			print('lis',[self.graph.get_id(l) for l in self.lis],'self.hap1PathIds',self.hap1PathIds)
 			print('nodesInWalk',[self.graph.get_id(n) for n in nodesInWalk]) 
 			# if there are reachable nodes that are in the current walk - then we shouldn't have flipped the start node
 			if len(nodesInWalk)>0:
 				self.currentNode=self.graph.get_handle(unVisitedTopSns[0],snarlHandleDirection)
+				self.fwdReachableNodes(self.currentNode,True)
+				print('lis',[self.graph.get_id(l) for l in self.lis],'self.hap1PathIds',self.hap1PathIds)
 			# get left side of graph
 			self.findNextTLs_Start()
 
@@ -491,27 +491,102 @@ class graphPathFinder:
 			return True
 
 	def noParentPath(self):
-		''' there are no parents no snarls '''
+		''' there are no top level snarls and we only have either lower level 
+			snarls, dag snarls, or biallelic snarls 
+			 '''
+		startOn = 0
 		def getTheHandle(node):
 			''' get a handle from the graph'''
 			self.currentNode = node
 			return False
-		self.graph.for_each_handle(getTheHandle)
+		print('no tlparent Path',)
+		# look for snarls to anchor ourselves to the graph as a place to start
+		for s in ['snarlsEnds','directed_acyclic_net_graphEnds','biAllelic_snarlsEnds']:
+			if len(self.sd[s])>0:
+				for key in list(self.sd[s].keys()):
+					print(s,key,self.sd[s][key]['start'])
+					if self.graph.get_degree(self.graph.get_handle(self.sd[s][key]['end']['end_id'],self.sd[s][key]['end']['backward']),False) > 0:
+						node_id = self.sd[s][key]['end']['end_id']
+						orientation = self.sd[s][key]['end']['backward']
+						self.currentNode=self.graph.get_handle(node_id,orientation)
+						print('startNode',self.graph.get_id(self.currentNode) )
+						break
+					if self.graph.get_degree(self.graph.get_handle(self.sd[s][key]['start']['start_id'],self.sd[s][key]['start']['backward']),False) > 0:
+						node_id = self.sd[s][key]['start']['start_id']
+						orientation = self.sd[s][key]['start']['backward']
+						self.currentNode=self.graph.get_handle(node_id,orientation)
+						print('startNode',self.graph.get_id(self.currentNode) )
+						break
+		if self.currentNode != 0:
+			print('picked a node to start at',self.graph.get_id(self.currentNode) )
+			self.fwdReachableNodes(self.currentNode,True)
+			startOn = self.currentNode
+			self.findNextTLs_Start()
+			
+			# flip the boolean handle orientation to go the out of the snarl in the backward direction
+			print('now go he opposite way')
+			handleDir = True
+			if orientation:
+				handleDir = False
+			self.currentNode=self.graph.get_handle(node_id,handleDir)
+			self.fwdReachableNodes(self.currentNode,True)
+			nodesInWalk = [ l for l in self.lis if self.graph.get_id(l) in self.hap1PathIds]
 
-		if self.graph.get_id(self.currentNode) not in self.hap1Path:
-			self.hap1Path.append(self.currentNode)
-			self.graph.follow_edges(self.currentNode,False,self.nextNode)
+			print('nodesInWalk',[self.graph.get_id(n) for n in nodesInWalk]) 
+			# if we already reached nodes that are in the current walk - then we shouldn't have flipped the start node
+			if len(nodesInWalk)>0:
+				self.currentNode=self.graph.get_handle(node_id,orientation)
+			# get left side of graph
+			self.findNextTLs_Start()
 
-		for h in self.hap1Path:
-			print(self.graph.get_id(h))
-			if self.hap1FinalWalk.count(h) == 0:
-				self.hap1FinalWalk.append(h)
-				self.hap1_pathLenInBps.append(self.graph.get_length(h))
-			 # output the path to a csv with appropriate colors for bandage
-			self.writeOutPathCSV(self.hap1Path,True)
+			for walk in self.hap1Path:
+				for h in walk:
+					print(self.graph.get_id(h))
+					if self.hap1FinalWalk.count(h) == 0:
+						self.hap1FinalWalk.append(h)
+						self.hap1_pathLenInBps.append(self.graph.get_length(h))
+				 # output the path to a csv with appropriate colors for bandage
+				self.writeOutPathCSV(self.hap1FinalWalk,True)
+				self.getStats()
+			self.writeContig(self.hap1FinalWalk)
+
+		else:		
+			# pick a random handle for the current node and go from there
+
+			self.graph.for_each_handle(getTheHandle)
+			print('\t\npick random handle', self.graph.get_id(self.currentNode))
+			self.fwdReachableNodes(self.currentNode,True)
+			if len(self.lis) > 0:
+				startOn = self.currentNode
+				self.findNextTLs_Start()
+			else:
+				self.graph.for_each_handle(getTheHandle)
+				print('\tpick another random handle', self.graph.get_id(self.currentNode))
+				startOn = self.currentNode
+				self.findNextTLs_Start()
+
+				# error here for chunk 107
+			for w in self.hap1Path:
+				# this is a n error because its graph.get_id([handle])
+				for h in w:
+					print(self.graph.get_id(h))
+					if self.hap1FinalWalk.count(h) == 0:
+						self.hap1FinalWalk.append(h)
+						self.hap1_pathLenInBps.append(self.graph.get_length(h))
+			print('double nodes here?:', [self.graph.get_id(l) for l in self.hap1FinalWalk])
+			### TODO: check that the length of path isn't longer than total chunk length
+			# like chunk 283
+			if self.graph.get_node_count() == 2:
+				self.hap1FinalWalk = self.hap1FinalWalk[0:2]
+				self.hap1_pathLenInBps=[]
+				for h in self.hap1FinalWalk:
+					self.hap1_pathLenInBps.append(self.graph.get_length(h))
+			print('double nodes here?:', [self.graph.get_id(l) for l in self.hap1FinalWalk])
+			# output the path to a csv with appropriate colors for bandage
+			self.writeOutPathCSV(self.hap1FinalWalk,True)
 			self.getStats()
 			
-			self.writeOneContig(self.hap1Path[0])
+			self.writeContig(self.hap1FinalWalk)
 
 		return False
 
@@ -542,8 +617,8 @@ class graphPathFinder:
 			# addNode_advancePointer()
 			return 'biAllelic_snarls'
 		elif self.graph.get_id(node) in list(self.sd['biAllelic_snarlsEnds'].keys()):
-			print('\t bi allelic end',self.graph.get_id(node) )
 			self.exit = self.sd['biAllelic_snarlsEnds'][int(self.graph.get_id(node))]['start']['start_id']
+			print('\t bi allelic end',self.graph.get_id(node), 'start',self.exit) 
 			# Since we move backward once check direction and move accordingly
 			if self.goingBackward:
 				print('going from end to start of biAlic')
@@ -603,9 +678,10 @@ class graphPathFinder:
 		# bi-allelic node
 		self.graph.follow_edges(self.currentNode,False,self.nextNode)
 		biallelicWalk.append(self.currentNode)
-		# other boundry node
-		self.graph.follow_edges(self.currentNode,False,self.chooseNextNode)
-		biallelicWalk.append(self.currentNode)
+		# other boundry node, unless it is a in/del bi allelic like in chunk_25
+		if self.graph.get_id(self.currentNode) != self.exit:
+			self.graph.follow_edges(self.currentNode,False,self.chooseNextNode)
+			biallelicWalk.append(self.currentNode)
 
 		if self.graph.get_id(self.currentNode) != self.exit:
 			print('\n\tsomething wrong with biAllelic?', [self.graph.get_id(b) for b in biallelicWalk])
@@ -629,6 +705,7 @@ class graphPathFinder:
 		self.fwdReachableNodes(self.currentNode,self.sd[llSnDict][self.graph.get_id(self.currentNode)]['start_self_reachable'] )
 		# do this to avoid DAG tips when exit node is preset
 		endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)] 
+		print('endinList',[self.graph.get_id(l) for l in endInList], self.exit)
 		# if it is a tip the list will have just the exit node in it
 		if len(endInList) ==1:
 			dagWalk.append(self.currentNode)
@@ -661,7 +738,10 @@ class graphPathFinder:
 					# move to one of the nodes in lis 
 				self.graph.follow_edges(self.currentNode,False,self.nextNode)
 				self.fwdReachableNodes(self.currentNode,True)
-				endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]				
+				endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]	
+			elif len(self.lis)==0:
+				print('are we out of graph ?')
+				break			
 			else:
 
 				dagWalk.append(self.currentNode)
@@ -670,6 +750,11 @@ class graphPathFinder:
 				# move to one of the nodes in lis 
 				self.graph.follow_edges(self.currentNode,False,self.nextNode)
 				self.fwdReachableNodes(self.currentNode,True)
+				if len(self.lis) ==0:
+					if len(dagWalk)<2:
+						print('flip the node and follow edges')
+						self.graph.follow_edges(self.graph.flip(self.currentNode),False, self.nextNode)
+						self.fwdReachableNodes(self.currentNode,True)
 				endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]
 				print(self.graph.get_id(self.currentNode),'endInList',self.exit,len(endInList),'lis',[self.graph.get_id(i) for i in self.lis])
 				if len(endInList) == 1:
@@ -701,9 +786,11 @@ class graphPathFinder:
 	def snarlWalk(self, llSnDict):
 		''' move through a DAG avoiding walking into the tip '''
 		def moveToUnvisitedNode(node):
-			print('choosing nextNode',self.chosenSnarlNodes, 'node',self.graph.get_id(node), )
+			print('choosing nextNode',[self.graph.get_id(i) for i in self.chosenSnarlNodes], 'node',self.graph.get_id(node), )
+			chosenSnarlIds = [self.graph.get_id(i) for i in self.chosenSnarlNodes]
 			if node in self.chosenSnarlNodes:
 				self.currentNode=node
+				print('moved to:',self.graph.get_id(self.currentNode))
 				# self.exit=0
 				return False
 			else: 
@@ -742,14 +829,24 @@ class graphPathFinder:
 				print('removed suquential repeats',[self.graph.get_id(i) for i in snarlWalk])
 				break
 
+			elif snarlWalkIds.count(self.graph.get_id(self.currentNode)) > 2:
+				print('node in snarlWalk too many times',[self.graph.get_id(i) for i in snarlWalk])
+
+				break
+
 			snarlWalk.append(self.currentNode)
 			snarlWalkIds.append(self.graph.get_id(self.currentNode))
+			print('snarl Walk',snarlWalkIds)
 			self.fwdReachableNodes(self.currentNode,False)
 			self.chosenSnarlNodes = [l for l in self.lis if l not in snarlWalk]
 			if len(self.chosenSnarlNodes) > 0:
 				# self.chosenSnarlNode=self.graph.get_id(unusedNodes[-1])
 				# print('chosen node', self.chosenSnarlNode)
+				prvNode = self.currentNode
 				self.graph.follow_edges(self.currentNode,False,moveToUnvisitedNode)
+
+				if self.currentNode==prvNode:
+					self.graph.follow_edges(self.currentNode,False,self.nextNode)
 				# self.fwdReachableNodes(self.currentNode,False)
 				# snarlWalk.append(self.currentNode)
 				# snarlWalkIds.append(self.graph.get_id(self.currentNode))
@@ -758,7 +855,7 @@ class graphPathFinder:
 				# self.fwdReachableNodes(self.currentNode,False)
 				# snarlWalk.append(self.currentNode)
 				# snarlWalkIds.append(self.graph.get_id(self.currentNode))
-
+			self.fwdReachableNodes(self.currentNode,False)
 			endInList = [ l for l in self.lis if self.exit == self.graph.get_id(l)]
 			print(self.graph.get_id(self.currentNode),'endInList',self.exit,len(endInList),'lis',[self.graph.get_id(i) for i in self.lis])
 
@@ -839,8 +936,9 @@ class graphPathFinder:
 					# append the start node of the next top level snarl for varifacation later
 					self.walkFromEnd_toStart.append(self.currentNode)
 					self.hap1PathIds.append(self.graph.get_id(self.currentNode))
-					self.sd['parentSnarls'][int(self.graph.get_id(self.currentNode))]['unvisited']=False
-					print('found next ParentStart')
+					if len(unVisitedTopSnrls)>1:
+						self.sd['parentSnarls'][int(self.graph.get_id(self.currentNode))]['unvisited']=False
+					print('found next ParentStart',self.hap1PathIds)
 					break
 				if self.graph.get_id(self.currentNode) in unVisitedTopSnrlsEnds:
 					# append the start node of the next top level snarl for varifacation later
@@ -849,22 +947,16 @@ class graphPathFinder:
 					self.sd['parentSnarlsEnds'][int(self.graph.get_id(self.currentNode))]['unvisited']=False
 					print('found next ParentEnd',self.graph.get_id(self.currentNode))
 					break
+
+				# if this is a snarl boundry
 				#check snarl dicts
 				snBndryDict = self.checkIsNodeSnBoundry(self.currentNode)
-				# if this is the end of the graph stop
-				if (self.graph.get_degree(self.currentNode,False) + self.graph.get_degree(self.currentNode,True) ) <2:
-					print('at the end', self.graph.get_id(self.currentNode))
-					if self.currentNode not in self.walkFromEnd_toStart:
-						self.homNodeLens.append(self.graph.get_length(self.currentNode))
-						self.walkFromEnd_toStart.append(self.currentNode)
-						self.hap1PathIds.append(self.graph.get_id(self.currentNode))
-					break
-				# if this is a snarl boundry
-				elif snBndryDict:
-					# these boundries will be the small bluntified nodes - I'm not going to skew the distribution like that. # self.homNodeLens.append(self.graph.get_length(self.currentNode)) maybe add it to it's own len distribution
+				if snBndryDict:
+					# these boundries will be the small bluntified nodes - I don't think I want to skew the distribution like that. # self.homNodeLens.append(self.graph.get_length(self.currentNode)) maybe add it to it's own len distribution
 					self.bluntifiedNodeLens.append(self.graph.get_length(self.currentNode))
 					print('\twhich dict?',snBndryDict)
 					if self.exit not in self.hap1PathIds:
+						print('\tnavigate snarl')
 						self.navigateSnarl(snBndryDict)
 
 					else:
@@ -878,6 +970,15 @@ class graphPathFinder:
 						# fill list with reachable nodes
 						self.fwdReachableNodes(self.currentNode,False)						
 					# break
+				
+				# if this is the end of the graph stop
+				if (self.graph.get_degree(self.currentNode,False) + self.graph.get_degree(self.currentNode,True) ) <2:
+					print('at the end', self.graph.get_id(self.currentNode))
+					if self.currentNode not in self.walkFromEnd_toStart:
+						self.homNodeLens.append(self.graph.get_length(self.currentNode))
+						self.walkFromEnd_toStart.append(self.currentNode)
+						self.hap1PathIds.append(self.graph.get_id(self.currentNode))
+					break
 				
 				
 				else:
@@ -908,13 +1009,30 @@ class graphPathFinder:
 		
 		print('\nfindNextTLs_Start here \t',self.graph.get_id(self.currentNode))
 		self.fwdReachableNodes(self.currentNode,True)
-		print( 'can go to',[ self.graph.get_id(f) for f in self.lis] )		
-		if len(self.lis) < 1:
-			print('no more graph')
-			return True
+		print( 'can go to',[ self.graph.get_id(f) for f in self.lis] )	
 		self.walkFromEnd_toStart=[]
 		self.walkFromEnd_toStart.append(self.currentNode)
-		self.graph.follow_edges(self.currentNode,False,self.nextNode)	
+		self.hap1PathIds.append(self.graph.get_id(self.currentNode))
+		# when going the opposite direction from start - check that we step onto a unwallked node 
+		nodesNOTInWalk = [ l for l in self.lis if self.graph.get_id(l) not in self.hap1PathIds]
+		print('nodesNOTInWalk',[self.graph.get_id(n) for n in nodesNOTInWalk])
+		if len(self.lis) == nodesNOTInWalk:
+			self.graph.follow_edges(self.currentNode,False,self.nextNode)
+		elif len(nodesNOTInWalk) > 0:
+				self.exit = self.graph.get_id(nodesNOTInWalk[0])
+				self.graph.follow_edges(self.currentNode,False,self.chooseNextNode)
+		else:
+			print('so are there no untouched nodes here?', [self.graph.get_id(l) for l in self.lis])
+
+		# if len(self.lis) < 1:
+		# 	print('no more graph')
+		# 	self.walkFromEnd_toStart=[]
+		# 	self.walkFromEnd_toStart.append(self.currentNode)
+		# 	self.hap1Path.append(self.walkFromEnd_toStart)
+		# 	self.hap1PathIds.append(self.graph.get_id(self.currentNode))
+		# 	return True
+		
+			
 		walkInbetweenTopLevelSnarls()
 		return True
 
@@ -959,6 +1077,8 @@ class graphPathFinder:
 
 		print('\n hap1_pathLenInBps:',self.hap1_pathLenInBps)
 
+		
+
 		# output the path to a csv with appropriate colors for bandage
 		self.writeOutPathCSV(self.hap1Path,False)
 		self.getStats()
@@ -973,6 +1093,7 @@ def main():
 		output: 2 haplotype paths ''' 
 	inputGraph, inputSnarlFilename = parseArguments()
 	# create an instance of the snarl manager obj and input the snarl file into dictionaries
+	# TODO run this inside of graphPathFinder
 	sm = SnarlManager(inputSnarlFilename)
 	allSnarlDict = sm.snarlsInput()
 
